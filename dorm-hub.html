@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>หิ้วหอ – บริการรับหิ้วของในหอพัก</title>
+<style>
+:root{--bg:#f4f7f5;--card:#fff;--tx:#17302a;--mu:#6b7f78;--pr:#12a37f;--pr2:#e3f6f0;--bd:#e0e8e4;--me:#12a37f;--you:#eef2f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1715;--card:#18231f;--tx:#e6f1ed;--mu:#8da39b;--pr:#2cc79f;--pr2:#16332b;--bd:#26362f;--you:#223029;color-scheme:dark}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px}
+#app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:72px}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--card);border-bottom:1px solid var(--bd);padding:10px 14px;display:flex;align-items:center;gap:8px;z-index:5}
+header b{flex:1;font-size:17px}
+.pill{border:1px solid var(--bd);background:var(--pr2);color:var(--pr);border-radius:99px;padding:5px 11px;font-size:13px;cursor:pointer}
+main{padding:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:8px}.sp{flex:1}
+.mu{color:var(--mu);font-size:13px}
+.chip{display:inline-block;border:1px solid var(--bd);border-radius:99px;padding:3px 10px;font-size:13px;margin:2px 4px 2px 0;background:var(--card);color:var(--tx);cursor:pointer}
+.chip.on{background:var(--pr);color:#fff;border-color:var(--pr)}
+.tag{display:inline-block;border-radius:6px;padding:2px 8px;font-size:12px;background:var(--pr2);color:var(--pr)}
+button.b{background:var(--pr);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-size:15px;cursor:pointer;font-family:inherit}
+button.b.o{background:transparent;color:var(--pr);border:1px solid var(--pr)}
+button.b.w{width:100%}
+input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:15px;font-family:inherit;margin:4px 0 8px}
+label{font-size:13px;color:var(--mu)}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--bd);display:flex;max-width:520px;margin:auto;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav a{flex:1;text-align:center;padding:10px 4px;font-size:12px;color:var(--mu);cursor:pointer}
+nav a.on{color:var(--pr);font-weight:600}nav a i{display:block;font-style:normal;font-size:20px}
+h3{margin:4px 0 10px}
+.chat{display:flex;flex-direction:column;height:calc(100vh - 56px)}
+.msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:78%;padding:8px 11px;border-radius:14px;background:var(--you);word-break:break-word}
+.m.me{align-self:flex-end;background:var(--me);color:#fff}
+.m img{max-width:100%;border-radius:10px;display:block}
+.cin{display:flex;gap:6px;padding:8px;background:var(--card);border-top:1px solid var(--bd)}
+.cin input{margin:0}.cin label.up{padding:9px 11px;border:1px solid var(--bd);border-radius:10px;cursor:pointer;font-size:18px;color:var(--tx)}
+.empty{text-align:center;color:var(--mu);padding:30px 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const DORMS=['F','M','C','B','A'],ROUNDS=['10:00','12:00','15:00','18:00','20:00'],SHOP_FEE=15;
+const SHOPS=[
+ {id:1,name:'ข้าวมันไก่ป้าแดง',e:'🍗',menu:[['ข้าวมันไก่',45],['ข้าวหมูแดง',50],['น้ำเปล่า',10]]},
+ {id:2,name:'ชานมหน้าหอ',e:'🧋',menu:[['ชาไทยเย็น',35],['โกโก้เย็น',35],['กาแฟเย็น',40]]},
+ {id:3,name:'มินิมาร์ท',e:'🏪',menu:[['ขนมปัง',25],['ไข่ต้ม',10],['มาม่าคัพ',12]]}];
+const $=s=>document.querySelector(s),esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function load(){try{return JSON.parse(localStorage.getItem('dm1'))||{users:[],posts:[],orders:[],chats:{}}}catch(e){return{users:[],posts:[],orders:[],chats:{}}}}
+let S=load(),me=null,ui={tab:null,shop:null,chat:null,cart:{},auth:'login',f:{dorm:'',round:''},book:null,pdorms:[]};
+try{me=sessionStorage.getItem('me')}catch(e){}
+function save(){try{localStorage.setItem('dm1',JSON.stringify(S))}catch(e){alert('พื้นที่เก็บข้อมูลเต็ม')}}
+const user=id=>S.users.find(u=>u.id===id)||{name:'?'};
+const U=()=>user(me),uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const ST={open:'รอรับงาน',matched:'กำลังดำเนินการ',done:'เสร็จสิ้น'};
+
+function auth(){
+ const reg=ui.auth==='reg';
+ return `<main><h3 style="margin-top:30px">🛵 หิ้วหอ</h3><p class="mu">รับหิ้วและสั่งอาหารภายในหอพัก</p><div class="card">
+ <label>ชื่อผู้ใช้</label><input id="an" autocomplete="username">
+ <label>รหัสผ่าน</label><input id="ap" type="password">
+ ${reg?`<label>บทบาทเริ่มต้น</label><select id="ar"><option value="customer">ผู้ฝากหิ้ว</option><option value="rider">ผู้รับหิ้ว</option></select>`:''}
+ <button class="b w" onclick="doAuth()">${reg?'สมัครสมาชิก':'เข้าสู่ระบบ'}</button>
+ <p class="mu" style="text-align:center" onclick="ui.auth='${reg?'login':'reg'}';render()"><u>${reg?'มีบัญชีแล้ว? เข้าสู่ระบบ':'ยังไม่มีบัญชี? สมัครสมาชิก'}</u></p></div>
+ <p class="mu">* ต้นแบบ: ข้อมูลเก็บในเบราว์เซอร์นี้เท่านั้น</p></main>`}
+function doAuth(){
+ const n=$('#an').value.trim(),p=$('#ap').value;if(!n||!p)return alert('กรอกข้อมูลให้ครบ');
+ if(ui.auth==='reg'){if(S.users.some(u=>u.name===n))return alert('ชื่อนี้ถูกใช้แล้ว');
+  const u={id:uid(),name:n,pw:p,role:$('#ar').value};S.users.push(u);save();login(u.id)}
+ else{const u=S.users.find(x=>x.name===n&&x.pw===p);if(!u)return alert('ชื่อหรือรหัสผ่านไม่ถูกต้อง');login(u.id)}}
+function login(id){me=id;try{sessionStorage.setItem('me',id)}catch(e){};ui.tab=null;render()}
+function logout(){me=null;try{sessionStorage.removeItem('me')}catch(e){};ui.chat=null;render()}
+function swap(){const u=U();u.role=u.role==='rider'?'customer':'rider';save();ui.tab=null;ui.shop=null;render()}
+
+const TABS={customer:[['market','🛍️','ตลาดหิ้ว'],['shops','🍜','ร้านค้า'],['orders','📋','ออเดอร์']],rider:[['post','📣','เปิดรอบ'],['jobs','🏪','งานร้านค้า'],['orders','📋','ออเดอร์']]};
+function shell(){
+ const u=U(),r=u.role,tabs=TABS[r];if(!tabs.some(t=>t[0]===ui.tab))ui.tab=tabs[0][0];
+ if(ui.chat)return chatView();
+ const v={market,shops,orders,post,jobs}[ui.tab]();
+ return `<header><b>🛵 หิ้วหอ</b><span class="pill" onclick="swap()">โหมด: ${r==='rider'?'ผู้รับหิ้ว':'ผู้ฝากหิ้ว'} ⇄</span><span class="pill" onclick="logout()">ออก</span></header>
+ <main>${v}</main><nav>${tabs.map(t=>`<a class="${ui.tab===t[0]?'on':''}" onclick="ui.tab='${t[0]}';ui.shop=null;ui.book=null;render()"><i>${t[1]}</i>${t[2]}</a>`).join('')}</nav>`}
+
+/* ---------- Customer: marketplace ---------- */
+function market(){
+ const f=ui.f;let ps=S.posts.filter(p=>p.open&&(!f.dorm||p.dorms.includes(f.dorm))&&(!f.round||p.round===f.round)).sort((a,b)=>a.fee-b.fee);
+ const chips=(arr,key,pre='')=>`<span class="chip ${!f[key]?'on':''}" onclick="ui.f.${key}='';render()">ทั้งหมด</span>`+arr.map(x=>`<span class="chip ${f[key]===x?'on':''}" onclick="ui.f.${key}='${x}';render()">${pre}${x}</span>`).join('');
+ let h=`<h3>ผู้รับหิ้วที่เปิดรอบ</h3><div class="mu">หอปลายทาง</div>${chips(DORMS,'dorm','หอ ')}<div class="mu" style="margin-top:6px">รอบส่ง</div>${chips(ROUNDS,'round')}<div class="mu" style="margin:8px 0">เรียงตามค่าหิ้วต่ำสุด</div>`;
+ if(!ps.length)h+='<div class="empty">ยังไม่มีรอบที่ตรงกับตัวกรอง</div>';
+ h+=ps.map(p=>`<div class="card"><div class="row"><b>${esc(user(p.rider).name)}</b><span class="sp"></span><span class="tag">฿${p.fee}</span></div>
+  <div class="mu">📍 ${esc(p.where)} · ⏰ รอบ ${p.round} น.</div><div style="margin:6px 0">ส่งที่: ${p.dorms.map(d=>`<span class="tag">หอ ${d}</span>`).join(' ')}</div>
+  ${ui.book===p.id?`<label>ฝากซื้ออะไร</label><textarea id="bi" rows="2"></textarea><label>หอปลายทาง</label><select id="bd">${p.dorms.map(d=>`<option>${d}</option>`).join('')}</select><button class="b w" onclick="bookPost('${p.id}')">ยืนยันการฝากหิ้ว</button>`:`<button class="b w o" onclick="ui.book='${p.id}';render()">เลือกใช้บริการ</button>`}</div>`).join('');
+ return h}
+function bookPost(pid){
+ const t=$('#bi').value.trim();if(!t)return alert('ระบุสิ่งที่ฝากซื้อ');const p=S.posts.find(x=>x.id===pid);
+ const o={id:uid(),type:'market',customer:me,rider:p.rider,items:t,dorm:$('#bd').value,fee:p.fee,status:'matched',t:Date.now()};
+ S.orders.push(o);save();ui.book=null;ui.chat=o.id;render()}
+
+/* ---------- Customer: shops ---------- */
+function shops(){
+ if(ui.shop){const s=SHOPS.find(x=>x.id===ui.shop),c=ui.cart;
+  const tot=Object.entries(c).reduce((a,[k,q])=>a+q*s.menu[k][1],0),n=Object.values(c).reduce((a,b)=>a+b,0);
+  return `<div class="pill" style="display:inline-block;margin-bottom:10px" onclick="ui.shop=null;ui.cart={};render()">← ร้านทั้งหมด</div><h3>${s.e} ${s.name}</h3>`+
+  s.menu.map((m,i)=>`<div class="card row"><div class="sp">${m[0]}<div class="mu">฿${m[1]}</div></div>${c[i]?`<button class="b o" onclick="qty(${i},-1)">−</button><b>${c[i]}</b>`:''}<button class="b" onclick="qty(${i},1)">+</button></div>`).join('')+
+  (n?`<div class="card"><div class="row"><span class="sp">สินค้า ${n} ชิ้น</span>฿${tot}</div><div class="row"><span class="sp">ค่าหิ้ว</span>฿${SHOP_FEE}</div><div class="row"><b class="sp">รวม</b><b>฿${tot+SHOP_FEE}</b></div>
+  <label>หอปลายทาง</label><select id="sd">${DORMS.map(d=>`<option>${d}</option>`).join('')}</select><button class="b w" onclick="placeShop(${s.id},${tot})">สั่งซื้อ</button></div>`:'')}
+ return '<h3>ร้านค้า</h3>'+SHOPS.map(s=>`<div class="card row" onclick="ui.shop=${s.id};ui.cart={};render()"><span style="font-size:30px">${s.e}</span><div class="sp"><b>${s.name}</b><div class="mu">${s.menu.length} เมนู</div></div>›</div>`).join('')}
+function qty(i,d){ui.cart[i]=Math.max(0,(ui.cart[i]||0)+d);if(!ui.cart[i])delete ui.cart[i];render()}
+function placeShop(sid,tot){
+ const s=SHOPS.find(x=>x.id===sid),items=Object.entries(ui.cart).map(([k,q])=>`${s.menu[k][0]} x${q}`).join(', ');
+ S.orders.push({id:uid(),type:'shop',customer:me,rider:null,shop:s.name,items,dorm:$('#sd').value,fee:SHOP_FEE,total:tot,status:'open',t:Date.now()});
+ save();ui.cart={};ui.shop=null;ui.tab='orders';render()}
+
+/* ---------- Rider ---------- */
+function post(){
+ const mine=S.posts.filter(p=>p.rider===me);
+ return `<h3>เปิดรอบรับหิ้ว</h3><div class="card"><label>พิกัด / สถานที่ที่กำลังไปซื้อของ</label><input id="pw" placeholder="เช่น ตลาดหน้ามอ, เซเว่นปากซอย">
+ <label>หอที่ไปส่งได้</label><div>${DORMS.map(d=>`<span class="chip ${ui.pdorms.includes(d)?'on':''}" onclick="togD('${d}')">หอ ${d}</span>`).join('')}</div>
+ <label>ค่าหิ้ว (บาท)</label><input id="pf" type="number" min="0" value="10"><label>รอบเวลาส่ง</label><select id="pr">${ROUNDS.map(r=>`<option>${r}</option>`).join('')}</select>
+ <button class="b w" onclick="mkPost()">ประกาศรอบ</button></div><h3>รอบของฉัน</h3>`+
+ (mine.length?mine.map(p=>`<div class="card row"><div class="sp"><b>${esc(p.where)}</b><div class="mu">รอบ ${p.round} · ฿${p.fee} · ${p.dorms.map(d=>'หอ '+d).join(', ')}</div></div><button class="b o" onclick="togPost('${p.id}')">${p.open?'ปิดรอบ':'เปิดอีกครั้ง'}</button></div>`).join(''):'<div class="empty">ยังไม่มีรอบ</div>')}
+function togD(d){const i=ui.pdorms.indexOf(d);i<0?ui.pdorms.push(d):ui.pdorms.splice(i,1);const w=$('#pw').value,f=$('#pf').value;render();$('#pw').value=w;$('#pf').value=f}
+function mkPost(){
+ const w=$('#pw').value.trim();if(!w||!ui.pdorms.length)return alert('ระบุสถานที่และเลือกหออย่างน้อย 1 หอ');
+ S.posts.push({id:uid(),rider:me,where:w,dorms:[...ui.pdorms],fee:+$('#pf').value||0,round:$('#pr').value,open:true});save();ui.pdorms=[];render()}
+function togPost(id){const p=S.posts.find(x=>x.id===id);p.open=!p.open;save();render()}
+function jobs(){
+ const os=S.orders.filter(o=>o.type==='shop'&&o.status==='open');
+ return '<h3>งานจากร้านค้า</h3>'+(os.length?os.map(o=>`<div class="card"><div class="row"><b class="sp">${esc(o.shop)}</b><span class="tag">฿${o.fee}</span></div><div>${esc(o.items)}</div><div class="mu">ส่งหอ ${o.dorm} · ยอดสินค้า ฿${o.total}</div><button class="b w" style="margin-top:8px" onclick="accept('${o.id}')">รับงาน</button></div>`).join(''):'<div class="empty">ยังไม่มีงานใหม่</div>')}
+function accept(id){const o=S.orders.find(x=>x.id===id);if(o.status!=='open')return alert('งานนี้ถูกรับไปแล้ว');o.rider=me;o.status='matched';save();ui.chat=id;render()}
+
+/* ---------- Orders & chat ---------- */
+function orders(){
+ const os=S.orders.filter(o=>o.customer===me||o.rider===me).sort((a,b)=>b.t-a.t);
+ return '<h3>ออเดอร์ของฉัน</h3>'+(os.length?os.map(o=>{const other=o.customer===me?(o.rider?user(o.rider).name:'รอผู้รับหิ้ว'):user(o.customer).name;
+  return `<div class="card"><div class="row"><b class="sp">${o.type==='shop'?esc(o.shop):'ฝากหิ้ว'}</b><span class="tag">${ST[o.status]}</span></div><div>${esc(o.items)}</div><div class="mu">หอ ${o.dorm} · ค่าหิ้ว ฿${o.fee} · ${esc(other)}</div>
+  <div class="row" style="margin-top:8px">${o.rider?`<button class="b o sp" onclick="ui.chat='${o.id}';render()">💬 แชท</button>`:''}${o.rider===me&&o.status==='matched'?`<button class="b sp" onclick="finish('${o.id}')">ส่งเสร็จแล้ว</button>`:''}</div></div>`}).join(''):'<div class="empty">ยังไม่มีออเดอร์</div>')}
+function finish(id){S.orders.find(o=>o.id===id).status='done';save();render()}
+function chatView(){
+ const o=S.orders.find(x=>x.id===ui.chat),ms=S.chats[o.id]||[],other=o.customer===me?o.rider:o.customer;
+ return `<header><span class="pill" onclick="ui.chat=null;render()">←</span><b>${esc(user(other).name)}</b><span class="tag">${ST[o.status]}</span></header>
+ <div class="chat"><div class="msgs" id="ms"><div class="mu" style="text-align:center">${esc(o.items)} · หอ ${o.dorm}<br>ผู้รับหิ้วส่งรูป QR และผู้ฝากส่งสลิปได้ที่ปุ่ม 📷</div>
+ ${ms.map(m=>`<div class="m ${m.from===me?'me':''}">${m.img?`<img src="${m.img}" alt="รูปภาพ">`:''}${m.text?esc(m.text):''}</div>`).join('')}</div>
+ <div class="cin"><label class="up">📷<input type="file" accept="image/*" hidden onchange="sendImg(this)"></label><input id="ci" placeholder="พิมพ์ข้อความ" onkeydown="if(event.key==='Enter')sendTxt()"><button class="b" onclick="sendTxt()">ส่ง</button></div></div>`}
+function push(m){(S.chats[ui.chat]=S.chats[ui.chat]||[]).push({from:me,t:Date.now(),...m});save();render()}
+function sendTxt(){const v=$('#ci').value.trim();if(v)push({text:v})}
+function sendImg(inp){
+ const f=inp.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);push({img:c.toDataURL('image/jpeg',.7)})};im.src=r.result};r.readAsDataURL(f)}
+
+function render(){
+ const draft=$('#ci')?$('#ci').value:'',focus=document.activeElement&&document.activeElement.id==='ci';
+ $('#app').innerHTML=me&&S.users.some(u=>u.id===me)?shell():auth();
+ if($('#ci')){$('#ci').value=draft;if(focus)$('#ci').focus()}
+ const m=$('#ms');if(m)m.scrollTop=m.scrollHeight}
+window.addEventListener('storage',e=>{if(e.key==='dm1'){S=load();render()}});
+render();
+</script>
+</body>
+</html>
